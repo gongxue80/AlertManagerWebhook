@@ -8,40 +8,27 @@ public class LarkMessageBuilder : IMessageBuilder<LarkMessage>
     /// <summary>
     /// 构建 Lark 消息对象
     /// </summary>
-    public LarkMessage? Build(Notification notification)
+    public LarkMessage? Build(AlertDetail alert)
     {
-        if (notification?.Alerts == null || notification.Alerts.Length == 0)
-            return null;
 
-        var alert = notification.Alerts[0];
-        var isFiring = alert.Status == AlertStatus.Firing;
+        var isFiring = alert.IsFiring;
         var title = isFiring ? "🚨 告警触发" : "✅ 告警恢复";
-
-        // 提取字段
-        string alertName = alert.Labels.GetValueOrDefault("alertname", "未知");
-        string severity = alert.Labels.GetValueOrDefault("severity", alert.Status.ToString());
-        string severityDisplay = isFiring ? severity : "normal";
-        string instance = alert.Labels.GetValueOrDefault("instance", "未知");
-        string host = alert.Labels.ContainsKey("host") ? alert.Labels["host"] : string.Empty;
-        string description = alert.Annotations.GetValueOrDefault("description", "");
-        string summary = alert.Annotations.GetValueOrDefault("summary", "");
-        string details = string.IsNullOrEmpty(description) ? summary : description;
 
         // 用 StringBuilder 构建内容，分块插入
         var sb = new StringBuilder();
-        sb.AppendLine($"**告警名称：** {alertName}");
-        sb.AppendLine($"**告警状态：** {severityDisplay}");
-        sb.AppendLine($"**告警实例：** {instance}");
-        if (!string.IsNullOrEmpty(host))
-            sb.AppendLine($"**主机名称：** {host}");
-        sb.AppendLine($"**触发时间：** {alert.StartsAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
+        sb.AppendLine($"**告警名称：** {alert.Name}");
+        sb.AppendLine($"**告警状态：** {alert.Severity}");
+        sb.AppendLine($"**告警实例：** {alert.Instance}");
+        if (!string.IsNullOrEmpty(alert.Host))
+            sb.AppendLine($"**主机名称：** {alert.Host}");
+        sb.AppendLine($"**触发时间：** {alert.StartsAt:yyyy-MM-dd HH:mm:ss}");
 
         if (!isFiring)
         {
-            sb.AppendLine($"**恢复时间：** {alert.EndsAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
+            sb.AppendLine($"**恢复时间：** {alert.EndsAt:yyyy-MM-dd HH:mm:ss}");
         }
 
-        sb.AppendLine(isFiring ? details : $"原告警内容：{details}");
+        sb.AppendLine(isFiring ? alert.Description : $"原告警内容：{alert.Description}");
 
         // 构建 Lark 消息对象
         return new LarkMessage

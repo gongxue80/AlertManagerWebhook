@@ -24,6 +24,8 @@ public record Alert
     public string Fingerprint { get; set; } = string.Empty;
 }
 
+
+
 public record Notification
 {
     public string Version { get; set; } = string.Empty;
@@ -34,4 +36,16 @@ public record Notification
     public Dictionary<string, string> CommonLabels { get; set; } = new();
     public string ExternalURL { get; set; } = string.Empty;
     public Alert[] Alerts { get; set; } = Array.Empty<Alert>();
+}
+
+public record AlertDetail
+{
+    public bool IsFiring { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Severity { get; set; } = string.Empty;
+    public string Instance { get; set; } = string.Empty;
+    public string Host { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public DateTime StartsAt { get; set; }
+    public DateTime EndsAt { get; set; }
 }

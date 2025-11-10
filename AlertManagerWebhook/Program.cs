@@ -4,30 +4,19 @@ using AlertManagerWebhook.MessageBuilders;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// 注册 HttpClient 服务
+builder.Services.AddTransient<LarkMessageBuilder>();
+builder.Services.AddTransient<DingtalkMessageBuilder>();
 builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
-// 获取 HttpClient 实例
-var httpClientFactory = app.Services.GetRequiredService<IHttpClientFactory>();
-var httpClient = httpClientFactory.CreateClient();
-
 var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("AlertManagerWebhook");
-
-// 注册消息构建器
-var messageConfig = new Dictionary<Receiver, (string UrlKey, string Name)>
-{
-    [Receiver.Lark] = ("LarkUrl", "Lark"),
-    [Receiver.Dingtalk] = ("DingtalkUrl", "Dingtalk")
-};
 
 app.MapGet("/", () => "Welcome to AlertManager Webhook");
 // Webhook 主处理接口，根据 receiver 类型分发
-app.MapPost("/{receiver}", async (HttpContext context, string receiver, Notification notification) =>
+app.MapPost("/{receiver}", async (HttpContext context, string receiver, Notification notification, HttpClient httpClient, IConfiguration config) =>
 {
-    if (!Enum.TryParse<Receiver>(receiver, true, out var receiverEnum) || !messageConfig.ContainsKey(receiverEnum))
+    if (!Enum.TryParse<Receiver>(receiver, true, out var receiverEnum))
     {
         logger.LogWarning($"Unsupported receiver type: {receiver}");
         context.Response.StatusCode = 400;
@@ -41,62 +30,94 @@ app.MapPost("/{receiver}", async (HttpContext context, string receiver, Notifica
         await context.Response.WriteAsync("Invalid notification data");
         return;
     }
-
-    var configuration = context.RequestServices.GetRequiredService<IConfiguration>();
-
     logger.LogInformation($"Received notification for {receiverEnum}, alerts count: {notification.Alerts.Length}");
 
-    var (urlKey, name) = messageConfig[receiverEnum];
-    var url = configuration[urlKey];
-    if (string.IsNullOrEmpty(url))
+    foreach (var alert in notification.Alerts)
     {
-        logger.LogWarning($"{urlKey} 配置缺失或为空");
-        context.Response.StatusCode = 500;
-        await context.Response.WriteAsync($"{urlKey} 配置缺失或为空");
-        return;
+        var detail = BuildAlertDetail(alert);
+        string? url = null;
+        object? message = null;
+        switch (receiverEnum)
+        {
+            case Receiver.Lark:
+                url = config["LarkUrl"];
+                var larkBuilder = context.RequestServices.GetRequiredService<LarkMessageBuilder>();
+                message = larkBuilder.Build(detail);
+                break;
+            case Receiver.Dingtalk:
+                url = config["DingtalkUrl"];
+                var dingtalkBuilder = context.RequestServices.GetRequiredService<DingtalkMessageBuilder>();
+                message = dingtalkBuilder.Build(detail);
+                break;
+            default:
+                url = null;
+                message = null;
+                break;
+        }
+        if (string.IsNullOrEmpty(url))
+        {
+            logger.LogWarning($"{receiverEnum} 配置缺失或为空");
+            return;
+        }
+
+        if (message is null)
+        {
+            logger.LogWarning($"Failed to build {receiver} message");
+            return;
+        }
+
+        logger.LogInformation($"Sending {receiver} message to {url}");
+        var ok = await SendToAsync(url, message, httpClient);
+        logger.LogInformation(ok ? $"Message sent to {receiver} successfully" : $"Failed to send message to {receiver}");
     }
-
-    object? message = receiverEnum switch
-    {
-        Receiver.Lark => new LarkMessageBuilder().Build(notification),
-        Receiver.Dingtalk => new DingtalkMessageBuilder().Build(notification),
-        _ => null
-    };
-
-    if (message is null)
-    {
-        logger.LogWarning($"Failed to build {name} message");
-        context.Response.StatusCode = 500;
-        await context.Response.WriteAsync($"Failed to build {name} message");
-        return;
-    }
-
-    logger.LogInformation($"Sending {name} message to {url}");
-    var ok = await SendTo(url, message);
-    logger.LogInformation(ok ? $"Message sent to {name} successfully" : $"Failed to send message to {name}");
-    context.Response.StatusCode = ok ? 200 : 500;
-    await context.Response.WriteAsync(ok ? $"Message sent to {name} successfully" : $"Failed to send message to {name}");
 });
 
 app.Run();
 
-async Task<bool> SendTo<T>(string url, T message)
+static async Task<bool> SendToAsync<T>(string url, T message, HttpClient httpClient)
 {
-    try
+    if (string.IsNullOrEmpty(url))
     {
-        var json = JsonSerializer.Serialize(message);
-        var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
-        var response = await httpClient.PostAsync(url, httpContent);
-        if (!response.IsSuccessStatusCode)
-        {
-            var respContent = await response.Content.ReadAsStringAsync();
-            logger.LogError($"Failed to send message to {url}. Status: {response.StatusCode}, Response: {respContent}");
-        }
-        return response.IsSuccessStatusCode;
+        throw new ArgumentException("URL cannot be null or empty", nameof(url));
     }
-    catch (Exception ex)
+
+    if (message is null)
     {
-        logger.LogError(ex, $"Error sending message to {url}");
-        return false;
+        throw new ArgumentNullException(nameof(message), "Message cannot be null");
+    }
+
+    var logger = LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger("AlertManagerWebhook");
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(message);
+            var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await httpClient.PostAsync(url, httpContent);
+            if (!response.IsSuccessStatusCode)
+            {
+                var respContent = await response.Content.ReadAsStringAsync();
+                logger.LogError($"Failed to send message to {url}. Status: {response.StatusCode}, Response: {respContent}");
+            }
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, $"Error sending message to {url}");
+            return false;
+        }
     }
 }
+
+static AlertDetail BuildAlertDetail(Alert alert) => new AlertDetail
+{
+    IsFiring = alert.Status == AlertStatus.Firing,
+    Name = alert.Labels.GetValueOrDefault("alertname", "未知"),
+    Severity = alert.Status == AlertStatus.Firing ? alert.Labels.GetValueOrDefault("severity", string.Empty) : "normal",
+    Instance = alert.Labels.GetValueOrDefault("instance", "未知"),
+    Host = alert.Labels.GetValueOrDefault("host", string.Empty),
+    Description = string.IsNullOrEmpty(alert.Annotations.GetValueOrDefault("description", string.Empty))
+    ? alert.Annotations.GetValueOrDefault("summary", string.Empty)
+    : alert.Annotations.GetValueOrDefault("description", string.Empty),
+    StartsAt = alert.StartsAt.ToLocalTime(),
+    EndsAt = alert.EndsAt.ToLocalTime()
+};

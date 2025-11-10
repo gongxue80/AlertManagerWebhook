@@ -4,49 +4,34 @@ namespace AlertManagerWebhook.MessageBuilders;
 
 public class DingtalkMessageBuilder : IMessageBuilder<DingtalkMessage>
 {
-    public DingtalkMessage? Build(Notification notification)
+    public DingtalkMessage? Build(AlertDetail alert)
     {
-        if (notification?.Alerts == null || notification.Alerts.Length == 0)
-            return null;
-
-        var alert = notification.Alerts[0];
-        var isFiring = alert.Status == AlertStatus.Firing;
-        var title = isFiring
+        var title = alert.IsFiring
             ? "# <font color=\"#FF0000\">🚨 触发告警</font>\n"
             : "# <font color=\"#008000\">✅ 告警恢复</font>\n";
 
-        string alertName = alert.Labels.TryGetValue("alertname", out var name) ? name : "未知";
-        string severity = alert.Labels.GetValueOrDefault("severity", alert.Status.ToString());
-        string severityDisplay = isFiring ? severity : "normal";
-        string instance = alert.Labels.TryGetValue("instance", out var inst) ? inst : "未知";
-        string host = alert.Labels.TryGetValue("host", out var h) ? h : "";
-        string description = alert.Annotations.TryGetValue("description", out var desc) ? desc : "";
-        string summary = alert.Annotations.TryGetValue("summary", out var s) ? s : "";
-        string details = string.IsNullOrEmpty(description) ? summary : description;
-
         var sb = new System.Text.StringBuilder();
         sb.AppendLine(title);
-        sb.AppendLine($"> **告警名称：** <font color=\"#FFA500\">{alertName}</font>  ");
-        // severity 字段通常不会因为告警恢复(resolved)而变化，alertmanager 会保持 labels.severity 为原始告警的级别
-        sb.AppendLine($"> **告警状态：** <font color=\"#FF0000\">{severityDisplay}</font>  ");
-        sb.AppendLine($"> **告警实例：** {instance}  ");
-        if (!string.IsNullOrEmpty(host))
-            sb.AppendLine($"> **主机名称：** {host}  ");
-        sb.AppendLine($"> **触发时间：** {alert.StartsAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}  ");
+        sb.AppendLine($"> **告警名称：** <font color=\"#FFA500\">{alert.Name}</font>  ");
+        sb.AppendLine($"> **告警状态：** <font color=\"#FF0000\">{alert.Severity}</font>  ");
+        sb.AppendLine($"> **告警实例：** {alert.Instance}  ");
+        if (!string.IsNullOrEmpty(alert.Host))
+            sb.AppendLine($"> **主机名称：** {alert.Host}  ");
+        sb.AppendLine($"> **触发时间：** {alert.StartsAt:yyyy-MM-dd HH:mm:ss}  ");
 
-        if (!isFiring)
+        if (!alert.IsFiring)
         {
-            sb.AppendLine($"> **恢复时间：** {alert.EndsAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}  ");
+            sb.AppendLine($"> **恢复时间：** {alert.EndsAt:yyyy-MM-dd HH:mm:ss}  ");
         }
 
         sb.AppendLine($"---");
-        sb.AppendLine(isFiring ? details : $"原告警内容：{details}");
+        sb.AppendLine(alert.IsFiring ? alert.Description : $"原告警内容：{alert.Description}");
 
         return new DingtalkMessage
         {
             Markdown = new DingtalkMarkdown
             {
-                Title = isFiring ? "触发告警" : "告警恢复",
+                Title = alert.IsFiring ? "触发告警" : "告警恢复",
                 Text = sb.ToString().TrimEnd()
             }
         };
