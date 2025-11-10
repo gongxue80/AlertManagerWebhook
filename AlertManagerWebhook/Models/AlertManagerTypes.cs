@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 namespace AlertManagerWebhook.Models;
 
 public enum Receiver
@@ -6,17 +7,21 @@ public enum Receiver
     Dingtalk
 }
 
+public enum AlertStatus
+{
+    Firing,
+    Resolved
+}
+// https://prometheus.io/docs/alerting/latest/configuration/#webhook_config
 public record Alert
 {
-    public string Status { get; set; } = string.Empty;
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public AlertStatus Status { get; set; }
     public Dictionary<string, string> Labels { get; set; } = new();
     public Dictionary<string, string> Annotations { get; set; } = new();
     public DateTime StartsAt { get; set; }
     public DateTime EndsAt { get; set; }
-    public DateTime StartTime { get; set; }
-    public DateTime EndTime { get; set; }
     public string Fingerprint { get; set; } = string.Empty;
-    public int Count { get; set; }
 }
 
 public record Notification
