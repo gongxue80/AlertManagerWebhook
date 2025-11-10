@@ -34,11 +34,11 @@ public class LarkMessageBuilder : IMessageBuilder<LarkMessage>
         sb.AppendLine($"**告警实例：** {instance}");
         if (!string.IsNullOrEmpty(host))
             sb.AppendLine($"**主机名称：** {host}");
-        sb.AppendLine($"**触发时间：** {alert.StartsAt:yyyy-MM-dd HH:mm:ss}");
+        sb.AppendLine($"**触发时间：** {alert.StartsAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
 
         if (!isFiring)
         {
-            sb.AppendLine($"**恢复时间：** {alert.EndsAt:yyyy-MM-dd HH:mm:ss}");
+            sb.AppendLine($"**恢复时间：** {alert.EndsAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
         }
 
         sb.AppendLine(isFiring ? details : $"原告警内容：{details}");
