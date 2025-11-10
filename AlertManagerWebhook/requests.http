@@ -12,7 +12,7 @@ Content-Type: application/json
                 "alertname": "机器宕机监测",
                 "instance": "10.180.48.2",
                 "job": "node_exporter",
-                "serverity": "warning"
+                "severity": "warning"
             },
             "annotations": {
                 "description": "机器:10.180.48.2 所属 job:node_exporter 宕机超过1分钟，请检查！",
@@ -32,12 +32,12 @@ Content-Type: application/json
 {
     "alerts": [
         {
-            "status": "resolved",
+            "status": "firing",
             "labels": {
                 "alertname": "机器宕机监测",
                 "instance": "10.180.48.2",
                 "host": "node-01",
-                "serverity": "warning"
+                "severity": "warning"
             },
             "annotations": {
                 "description": "机器:10.180.48.2 所属 job:node_exporter 宕机超过1分钟，请检查！",

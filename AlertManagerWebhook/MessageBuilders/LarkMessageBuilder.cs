@@ -19,6 +19,7 @@ public class LarkMessageBuilder : IMessageBuilder<LarkMessage>
 
         // 提取字段
         string alertName = alert.Labels.GetValueOrDefault("alertname", "未知");
+        string severity = alert.Labels.GetValueOrDefault("severity", alert.Status.ToString());
         string instance = alert.Labels.GetValueOrDefault("instance", "未知");
         string host = alert.Labels.ContainsKey("host") ? alert.Labels["host"] : string.Empty;
         string description = alert.Annotations.GetValueOrDefault("description", "");
@@ -28,7 +29,7 @@ public class LarkMessageBuilder : IMessageBuilder<LarkMessage>
         // 用 StringBuilder 构建内容，分块插入
         var sb = new StringBuilder();
         sb.AppendLine($"**告警名称：** {alertName}");
-        sb.AppendLine($"**告警状态：** {alert.Status}");
+        sb.AppendLine($"**告警状态：** {severity}");
         sb.AppendLine($"**告警实例：** {instance}");
         if (!string.IsNullOrEmpty(host))
             sb.AppendLine($"**主机名称：** {host}");
