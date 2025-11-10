@@ -16,6 +16,7 @@ public class DingtalkMessageBuilder : IMessageBuilder<DingtalkMessage>
             : "# <font color=\"#008000\">✅ 告警恢复</font>\n";
 
         string alertName = alert.Labels.TryGetValue("alertname", out var name) ? name : "未知";
+        string severity = alert.Labels.GetValueOrDefault("severity", alert.Status.ToString());
         string instance = alert.Labels.TryGetValue("instance", out var inst) ? inst : "未知";
         string host = alert.Labels.TryGetValue("host", out var h) ? h : "";
         string description = alert.Annotations.TryGetValue("description", out var desc) ? desc : "";
@@ -25,7 +26,7 @@ public class DingtalkMessageBuilder : IMessageBuilder<DingtalkMessage>
         var sb = new System.Text.StringBuilder();
         sb.AppendLine(title);
         sb.AppendLine($"> **告警名称：** <font color=\"#FFA500\">{alertName}</font>  ");
-        sb.AppendLine($"> **告警状态：** <font color=\"#FF0000\">{alert.Status}</font>  ");
+        sb.AppendLine($"> **告警状态：** <font color=\"#FF0000\">{severity}</font>  ");
         sb.AppendLine($"> **告警实例：** {instance}  ");
         if (!string.IsNullOrEmpty(host))
             sb.AppendLine($"> **主机名称：** {host}  ");
