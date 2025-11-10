@@ -14,6 +14,7 @@
 - .NET 8.0 运行环境（Ubuntu 可用 `sudo apt install dotnet-runtime-8.0`）
 
 ### 2. 构建与发布
+
 ```bash
 # 发布为 Linux 可运行包
 make pub
@@ -22,15 +23,19 @@ dotnet publish -c Release -r linux-x64 --self-contained false
 ```
 
 ### 3. 配置
+
 - 修改 `appsettings.json`，填写钉钉和飞书 Webhook 地址。
 - 本地开发敏感信息建议用环境变量或 user-secrets 管理。
+
 ```bash
+# 本地开发
 dotnet user-secrets init
 dotnet user-secrets --project AlertManagerWebhook set "DingtalkUrl" "your dingtalk url"
 dotnet user-secrets --project AlertManagerWebhook set "LarkUrl" "your Lark url"
 ```
 
 ### 4. 运行
+
 ```bash
 cd AlertManagerWebhook/bin/Release/net9.0/linux-x64/publish
 # 运行服务
@@ -44,7 +49,10 @@ cd AlertManagerWebhook/bin/Release/net9.0/linux-x64/publish
 - 推荐用 systemd 管理服务，见下方示例。
 - 可用 Nginx 做反向代理。
 
+添加 DingtalkUrl 或 LarkUrl 到 appsettings.json
+
 ### 6. systemd 示例
+
 ```
 [Unit]
 Description=AlertManager Webhook Service
