@@ -23,7 +23,7 @@ jobs:
         run: dotnet publish -c Release -r linux-x64 --self-contained false
       - name: Archive publish folder
         run: |
-          FRAMEWORK=$(ls -dvt ./AlertManagerWebhook/bin/Release | grep net | head -n 1)
+          FRAMEWORK=$(ls -dt ./AlertManagerWebhook/bin/Release | grep net | head -n 1)
           tar -czvf AlertManagerWebhook-linux-x64.tar.gz -C ./AlertManagerWebhook/bin/Release/$FRAMEWORK/linux-x64/publish .
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
