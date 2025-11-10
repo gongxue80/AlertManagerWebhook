@@ -3,18 +3,18 @@ using AlertManagerWebhook.Models;
 
 namespace AlertManagerWebhook.MessageBuilders;
 
-public class LarkMessageBuilder : IMessageBuilder
+public class LarkMessageBuilder : IMessageBuilder<LarkMessage>
 {
     /// <summary>
     /// 构建 Lark 消息对象
     /// </summary>
-    public object? Build(Notification notification)
+    public LarkMessage? Build(Notification notification)
     {
         if (notification?.Alerts == null || notification.Alerts.Length == 0)
             return null;
 
         var alert = notification.Alerts[0];
-        var isFiring = alert.Status == "firing";
+        var isFiring = alert.Status == AlertStatus.Firing;
         var title = isFiring ? "🚨 告警触发" : "✅ 告警恢复";
 
         // 提取字段
@@ -32,15 +32,10 @@ public class LarkMessageBuilder : IMessageBuilder
         sb.AppendLine($"**告警实例：** {instance}");
         if (!string.IsNullOrEmpty(host))
             sb.AppendLine($"**主机名称：** {host}");
+        sb.AppendLine($"**触发时间：** {alert.StartsAt:yyyy-MM-dd HH:mm:ss}");
 
-        if (isFiring)
+        if (!isFiring)
         {
-            sb.AppendLine($"**告警次数：** {alert.Count}");
-            sb.AppendLine($"**触发时间：** {alert.StartsAt:yyyy-MM-dd HH:mm:ss}");
-        }
-        else
-        {
-            sb.AppendLine($"**开始时间：** {alert.StartsAt:yyyy-MM-dd HH:mm:ss}");
             sb.AppendLine($"**恢复时间：** {alert.EndsAt:yyyy-MM-dd HH:mm:ss}");
         }
 

@@ -20,8 +20,7 @@ Content-Type: application/json
             },
             "startsAt": "2024-01-10T11:59:09.775Z",
             "endsAt": "2024-01-10T13:00:00Z",
-            "fingerprint": "02f13394997e5211",
-            "count": 1
+            "fingerprint": "02f13394997e5211"
         }
     ]
 }
@@ -46,8 +45,7 @@ Content-Type: application/json
             },
             "startsAt": "2024-01-10T11:59:09.775Z",
             "endsAt": "2024-01-10T13:00:00Z",
-            "fingerprint": "02f13394997e5211",
-            "count": 1
+            "fingerprint": "02f13394997e5211"
         }
     ]
 }

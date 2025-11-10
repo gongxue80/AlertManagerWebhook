@@ -17,17 +17,17 @@ var httpClient = httpClientFactory.CreateClient();
 var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("AlertManagerWebhook");
 
 // 注册消息构建器
-var messageBuilders = new Dictionary<Receiver, (string UrlKey, IMessageBuilder Builder, string Name)>
+var messageConfig = new Dictionary<Receiver, (string UrlKey, string Name)>
 {
-    [Receiver.Lark] = ("LarkUrl", new LarkMessageBuilder(), "Lark"),
-    [Receiver.Dingtalk] = ("DingtalkUrl", new DingtalkMessageBuilder(), "Dingtalk")
+    [Receiver.Lark] = ("LarkUrl", "Lark"),
+    [Receiver.Dingtalk] = ("DingtalkUrl", "Dingtalk")
 };
 
 app.MapGet("/", () => "Welcome to AlertManager Webhook");
 // Webhook 主处理接口，根据 receiver 类型分发
 app.MapPost("/{receiver}", async (HttpContext context, string receiver, Notification notification) =>
 {
-    if (!Enum.TryParse<Receiver>(receiver, true, out var receiverEnum) || !messageBuilders.ContainsKey(receiverEnum))
+    if (!Enum.TryParse<Receiver>(receiver, true, out var receiverEnum) || !messageConfig.ContainsKey(receiverEnum))
     {
         logger.LogWarning($"Unsupported receiver type: {receiver}");
         context.Response.StatusCode = 400;
@@ -46,7 +46,7 @@ app.MapPost("/{receiver}", async (HttpContext context, string receiver, Notifica
 
     logger.LogInformation($"Received notification for {receiverEnum}, alerts count: {notification.Alerts.Length}");
 
-    var (urlKey, builder, name) = messageBuilders[receiverEnum];
+    var (urlKey, name) = messageConfig[receiverEnum];
     var url = configuration[urlKey];
     if (string.IsNullOrEmpty(url))
     {
@@ -56,7 +56,13 @@ app.MapPost("/{receiver}", async (HttpContext context, string receiver, Notifica
         return;
     }
 
-    var message = builder.Build(notification);
+    object? message = receiverEnum switch
+    {
+        Receiver.Lark => new LarkMessageBuilder().Build(notification),
+        Receiver.Dingtalk => new DingtalkMessageBuilder().Build(notification),
+        _ => null
+    };
+
     if (message is null)
     {
         logger.LogWarning($"Failed to build {name} message");
