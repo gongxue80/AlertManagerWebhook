@@ -18,6 +18,7 @@ public class LarkMessageBuilder : IMessageBuilder<LarkMessage>
         var sb = new StringBuilder();
         sb.AppendLine($"**告警名称：** {alert.Name}");
         sb.AppendLine($"**告警状态：** {alert.Severity}");
+        sb.AppendLine("___");
         sb.AppendLine($"**告警实例：** {alert.Instance}");
         if (!string.IsNullOrEmpty(alert.Host))
             sb.AppendLine($"**主机名称：** {alert.Host}");
@@ -25,12 +26,12 @@ public class LarkMessageBuilder : IMessageBuilder<LarkMessage>
             sb.AppendLine($"**环境名称：** {alert.EnvName}");
         if (!string.IsNullOrEmpty(alert.Project))
             sb.AppendLine($"**项目名称：** {alert.Project}");
-
-        sb.AppendLine($"**触发时间：** {alert.StartsAt:yyyy-MM-dd HH:mm:ss}");
+        sb.AppendLine("___");
+        sb.AppendLine($"**触发时间：** {alert.StartsAt:yyyy-MM-dd HH:mm:ss zzz}");
 
         if (!isFiring)
         {
-            sb.AppendLine($"**恢复时间：** {alert.EndsAt:yyyy-MM-dd HH:mm:ss}");
+            sb.AppendLine($"**恢复时间：** {alert.EndsAt:yyyy-MM-dd HH:mm:ss zzz}");
         }
 
         sb.AppendLine(isFiring ? alert.Description : $"原告警内容：{alert.Description}");
@@ -50,7 +51,7 @@ public class LarkMessageBuilder : IMessageBuilder<LarkMessage>
                 [
                     new LarkCardElement
                     {
-                        Text = new LarkCardElementText { Content = sb.ToString().TrimEnd() }
+                        Text = new LarkCardElementText { Content = sb.ToString().TrimEnd(), Tag = "lark_md" }
                     }
                 ]
             }

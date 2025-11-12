@@ -37,7 +37,8 @@ Content-Type: application/json
                 "alertname": "机器宕机监测",
                 "instance": "10.110.0.2",
                 "host": "node-01",
-                "severity": "warning"
+                "severity": "warning",
+                "env": "production"
             },
             "annotations": {
                 "description": "node-01（10.110.0.2），宕机超过1分钟，请检查！",
@@ -53,7 +54,8 @@ Content-Type: application/json
                 "alertname": "机器宕机监测",
                 "instance": "10.110.0.3",
                 "host": "node-02",
-                "severity": "warning"
+                "severity": "warning",
+                "env": "production"
             },
             "annotations": {
                 "description": "node-02（10.110.0.3），宕机超过1分钟，请检查！",
