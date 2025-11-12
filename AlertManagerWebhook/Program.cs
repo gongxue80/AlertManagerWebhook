@@ -14,7 +14,7 @@ var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Ale
 
 app.MapGet("/", () => "Welcome to AlertManager Webhook");
 // Webhook 主处理接口，根据 receiver 类型分发
-app.MapPost("/{receiver}", async (HttpContext context, string receiver, Notification notification, HttpClient httpClient, IConfiguration config) =>
+app.MapPost("/{receiver}/{token}", async (HttpContext context, string receiver, string token, Notification notification, HttpClient httpClient) =>
 {
     if (!Enum.TryParse<Receiver>(receiver, true, out var receiverEnum))
     {
@@ -40,12 +40,12 @@ app.MapPost("/{receiver}", async (HttpContext context, string receiver, Notifica
         switch (receiverEnum)
         {
             case Receiver.Lark:
-                url = config["LarkUrl"];
+                url = $"https://open.feishu.cn/open-apis/bot/v2/hook/{token}";
                 var larkBuilder = context.RequestServices.GetRequiredService<LarkMessageBuilder>();
                 message = larkBuilder.Build(detail);
                 break;
             case Receiver.Dingtalk:
-                url = config["DingtalkUrl"];
+                url = $"https://oapi.dingtalk.com/robot/send?access_token={token}"
                 var dingtalkBuilder = context.RequestServices.GetRequiredService<DingtalkMessageBuilder>();
                 message = dingtalkBuilder.Build(detail);
                 break;
@@ -56,7 +56,7 @@ app.MapPost("/{receiver}", async (HttpContext context, string receiver, Notifica
         }
         if (string.IsNullOrEmpty(url))
         {
-            logger.LogWarning($"{receiverEnum} 配置缺失或为空");
+            logger.LogWarning($"Unsupported receiver type: {receiverEnum}");
             return;
         }
 

@@ -24,14 +24,23 @@ dotnet publish -c Release -r linux-x64 --self-contained false
 
 ### 3. 配置
 
-- 修改 `appsettings.json`，填写钉钉和飞书 Webhook 地址。
-- 本地开发敏感信息建议用环境变量或 user-secrets 管理。
+```yml
+# file: alertmanager.yml
+global:
+  resolve_timeout: 5m
 
-```bash
-# 本地开发
-dotnet user-secrets init
-dotnet user-secrets --project AlertManagerWebhook set "DingtalkUrl" "your dingtalk url"
-dotnet user-secrets --project AlertManagerWebhook set "LarkUrl" "your Lark url"
+route:
+  group_by: ['alertname']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 5m
+  receiver: 'default'
+
+receivers:
+- name: 'default'
+  webhook_configs:
+  - url: 'http://localhost:5000/lark/<your lark token>'
+    send_resolved: true
 ```
 
 ### 4. 运行
