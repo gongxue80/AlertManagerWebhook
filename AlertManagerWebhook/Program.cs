@@ -45,7 +45,7 @@ app.MapPost("/{receiver}/{token}", async (HttpContext context, string receiver, 
                 message = larkBuilder.Build(detail);
                 break;
             case Receiver.Dingtalk:
-                url = $"https://oapi.dingtalk.com/robot/send?access_token={token}"
+                url = $"https://oapi.dingtalk.com/robot/send?access_token={token}";
                 var dingtalkBuilder = context.RequestServices.GetRequiredService<DingtalkMessageBuilder>();
                 message = dingtalkBuilder.Build(detail);
                 break;
