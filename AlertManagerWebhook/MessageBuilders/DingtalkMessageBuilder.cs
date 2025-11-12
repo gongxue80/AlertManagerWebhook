@@ -17,6 +17,10 @@ public class DingtalkMessageBuilder : IMessageBuilder<DingtalkMessage>
         sb.AppendLine($"> **告警实例：** {alert.Instance}  ");
         if (!string.IsNullOrEmpty(alert.Host))
             sb.AppendLine($"> **主机名称：** {alert.Host}  ");
+        if (!string.IsNullOrEmpty(alert.EnvName))
+            sb.AppendLine($"> **环境名称：** {alert.EnvName}  ");
+        if (!string.IsNullOrEmpty(alert.Project))
+            sb.AppendLine($"> **项目名称：** {alert.Project}  ");
         sb.AppendLine($"> **触发时间：** {alert.StartsAt:yyyy-MM-dd HH:mm:ss}  ");
 
         if (!alert.IsFiring)

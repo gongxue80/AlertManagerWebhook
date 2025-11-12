@@ -43,6 +43,8 @@ public record AlertDetail
     public bool IsFiring { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Severity { get; set; } = string.Empty;
+    public string EnvName {get; set;} = string.Empty;
+    public string Project {get; set;} = string.Empty;
     public string Instance { get; set; } = string.Empty;
     public string Host { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;

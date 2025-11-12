@@ -113,6 +113,8 @@ static AlertDetail BuildAlertDetail(Alert alert) => new AlertDetail
     IsFiring = alert.Status == AlertStatus.Firing,
     Name = alert.Labels.GetValueOrDefault("alertname", "未知"),
     Severity = alert.Status == AlertStatus.Firing ? alert.Labels.GetValueOrDefault("severity", string.Empty) : "normal",
+    EnvName = alert.Labels.GetValueOrDefault("env", string.Empty),
+    Project = alert.Labels.GetValueOrDefault("project", string.Empty),
     Instance = alert.Labels.GetValueOrDefault("instance", "未知"),
     Host = alert.Labels.GetValueOrDefault("host", string.Empty),
     Description = string.IsNullOrEmpty(alert.Annotations.GetValueOrDefault("description", string.Empty))
