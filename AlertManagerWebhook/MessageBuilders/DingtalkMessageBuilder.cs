@@ -21,11 +21,11 @@ public class DingtalkMessageBuilder : IMessageBuilder<DingtalkMessage>
             sb.AppendLine($"> **环境名称：** {alert.EnvName}  ");
         if (!string.IsNullOrEmpty(alert.Project))
             sb.AppendLine($"> **项目名称：** {alert.Project}  ");
-        sb.AppendLine($"> **触发时间：** {alert.StartsAt:yyyy-MM-dd HH:mm:ss}  ");
+        sb.AppendLine($"> **触发时间：** {alert.StartsAt:yyyy-MM-dd HH:mm:ss zzz}  ");
 
         if (!alert.IsFiring)
         {
-            sb.AppendLine($"> **恢复时间：** {alert.EndsAt:yyyy-MM-dd HH:mm:ss}  ");
+            sb.AppendLine($"> **恢复时间：** {alert.EndsAt:yyyy-MM-dd HH:mm:ss zzz}  ");
         }
 
         sb.AppendLine($"---");
