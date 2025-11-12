@@ -58,8 +58,6 @@ cd AlertManagerWebhook/bin/Release/net9.0/linux-x64/publish
 - 推荐用 systemd 管理服务，见下方示例。
 - 可用 Nginx 做反向代理。
 
-添加 DingtalkUrl 或 LarkUrl 到 appsettings.json
-
 ### 6. systemd 示例
 
 ```
