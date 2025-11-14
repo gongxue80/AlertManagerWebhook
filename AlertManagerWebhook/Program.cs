@@ -168,3 +168,6 @@ static AlertDetail BuildAlertDetail(Alert alert) => new AlertDetail
     StartsAt = alert.StartsAt.ToLocalTime(),
     EndsAt = alert.EndsAt.ToLocalTime()
 };
+
+// Add this class to make it accessible for testing
+public partial class Program { }
