@@ -48,6 +48,9 @@ public record LarkCardElement
     public string Tag { get; set; } = "div";
     [JsonPropertyName("text")]
     public LarkCardElementText Text { get; set; } = new();
+    [JsonPropertyName("fields")]
+    public LarkCardElementField[]? Fields { get; set; }
+    // Actions will be added later
 }
 
 public record LarkCardElementText
@@ -56,4 +59,12 @@ public record LarkCardElementText
     public string Tag { get; set; } = "lark_md";
     [JsonPropertyName("content")]
     public string Content { get; set; } = string.Empty;
+}
+
+public record LarkCardElementField
+{
+    [JsonPropertyName("is_short")]
+    public bool IsShort { get; set; } = true;
+    [JsonPropertyName("text")]
+    public LarkCardElementText Text { get; set; } = new();
 }

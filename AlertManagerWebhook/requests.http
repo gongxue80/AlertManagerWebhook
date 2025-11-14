@@ -26,7 +26,7 @@ Content-Type: application/json
 }
 
 ### Lark Webhook
-POST {{base}}/lark
+POST {{base}}/lark/{{$env:LARK_WEBHOOK_TOKEN}}
 Content-Type: application/json
 
 {
@@ -37,6 +37,7 @@ Content-Type: application/json
                 "alertname": "机器宕机监测",
                 "instance": "10.110.0.2",
                 "host": "node-01",
+                "project": "demo",
                 "severity": "warning",
                 "env": "production"
             },
