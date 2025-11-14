@@ -1,7 +1,7 @@
 @base=http://localhost:5124
 
 ### Dingtalk Webhook
-POST {{base}}/dingtalk
+POST {{base}}/dingtalk/{{DINGTALK_WEBHOOK_TOKEN}}
 Content-Type: application/json
 
 {
@@ -10,7 +10,7 @@ Content-Type: application/json
             "status": "resolved",
             "labels": {
                 "alertname": "机器宕机监测",
-                "instance": "10.180.48.2",
+                "instance": "10.110.0.3",
                 "host": "node-02",
                 "severity": "warning"
             },
@@ -26,7 +26,7 @@ Content-Type: application/json
 }
 
 ### Lark Webhook
-POST {{base}}/lark/{{$env:LARK_WEBHOOK_TOKEN}}
+POST {{base}}/lark/{{LARK_WEBHOOK_TOKEN}}
 Content-Type: application/json
 
 {

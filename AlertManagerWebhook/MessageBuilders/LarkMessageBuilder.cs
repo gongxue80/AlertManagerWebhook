@@ -7,7 +7,7 @@ public class LarkMessageBuilder : IMessageBuilder<LarkMessage>
     /// <summary>
     /// 构建 Lark 消息对象
     /// </summary>
-    public LarkMessage? Build(AlertDetail alert)
+    public LarkMessage Build(AlertDetail alert)
     {
         var isFiring = alert.IsFiring;
         var title = isFiring ? "🚨 告警触发" : "✅ 告警恢复";

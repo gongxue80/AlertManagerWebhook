@@ -3,5 +3,5 @@ namespace AlertManagerWebhook.MessageBuilders;
 
 public interface IMessageBuilder<TMessage>
 {
-    TMessage? Build(AlertDetail alert);
+    TMessage Build(AlertDetail alert);
 }

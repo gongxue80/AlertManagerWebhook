@@ -4,7 +4,7 @@ namespace AlertManagerWebhook.MessageBuilders;
 
 public class DingtalkMessageBuilder : IMessageBuilder<DingtalkMessage>
 {
-    public DingtalkMessage? Build(AlertDetail alert)
+    public DingtalkMessage Build(AlertDetail alert)
     {
         // 根据告警级别和状态选择不同的颜色
         string titleColor;

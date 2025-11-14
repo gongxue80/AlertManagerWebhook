@@ -2,10 +2,16 @@ using System.Text.Json;
 using AlertManagerWebhook.Models;
 using AlertManagerWebhook.MessageBuilders;
 using System.Text;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add configuration
+builder.Services.Configure<WebhookConfig>(builder.Configuration.GetSection("WebhookConfig"));
+
 builder.Services.AddTransient<LarkMessageBuilder>();
 builder.Services.AddTransient<DingtalkMessageBuilder>();
+builder.Services.AddTransient<MessageBuilderFactory>();
 builder.Services.AddHttpClient();
 
 var app = builder.Build();
@@ -14,67 +20,109 @@ var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Ale
 
 app.MapGet("/", () => "Welcome to AlertManager Webhook");
 // Webhook 主处理接口，根据 receiver 类型分发
-app.MapPost("/{receiver}/{token}", async (HttpContext context, string receiver, string token, Notification notification, HttpClient httpClient) =>
+app.MapPost("/{receiver}/{token}", async (HttpContext context,
+    string receiver,
+    string token,
+    Notification notification,
+    HttpClient httpClient) =>
 {
-    if (!Enum.TryParse<Receiver>(receiver, true, out var receiverEnum))
+    try
     {
-        logger.LogWarning($"Unsupported receiver type: {receiver}");
-        context.Response.StatusCode = 400;
-        await context.Response.WriteAsync("Unsupported receiver type");
-        return;
-    }
-    if (notification == null || notification.Alerts == null || notification.Alerts.Length == 0)
-    {
-        logger.LogWarning("Invalid notification data");
-        context.Response.StatusCode = 400;
-        await context.Response.WriteAsync("Invalid notification data");
-        return;
-    }
-    logger.LogInformation($"Received notification for {receiverEnum}, alerts count: {notification.Alerts.Length}");
-
-    foreach (var alert in notification.Alerts)
-    {
-        var detail = BuildAlertDetail(alert);
-        string? url = null;
-        object? message = null;
-        switch (receiverEnum)
+        // Perform validation
+        var (isValid, receiverEnum) = await ValidateRequest(context, receiver, token, notification, logger);
+        if (!isValid)
         {
-            case Receiver.Lark:
-                url = $"https://open.feishu.cn/open-apis/bot/v2/hook/{token}";
-                var larkBuilder = context.RequestServices.GetRequiredService<LarkMessageBuilder>();
-                message = larkBuilder.Build(detail);
-                break;
-            case Receiver.Dingtalk:
-                url = $"https://oapi.dingtalk.com/robot/send?access_token={token}";
-                var dingtalkBuilder = context.RequestServices.GetRequiredService<DingtalkMessageBuilder>();
-                message = dingtalkBuilder.Build(detail);
-                break;
-            default:
-                url = null;
-                message = null;
-                break;
-        }
-        if (string.IsNullOrEmpty(url))
-        {
-            logger.LogWarning($"Unsupported receiver type: {receiverEnum}");
             return;
         }
 
-        if (message is null)
-        {
-            logger.LogWarning($"Failed to build {receiver} message");
-            return;
-        }
+        logger.LogInformation("Received notification for {ReceiverEnum}, alerts count: {AlertCount}, token: {TokenMasked}", receiverEnum, notification.Alerts.Length, token.Substring(0, Math.Min(5, token.Length)) + "***");
 
-        logger.LogInformation($"Sending {receiver} message to {url}");
-        var ok = await SendToAsync(url, message, httpClient);
-        logger.LogInformation(ok ? $"Message sent to {receiver} successfully" : $"Failed to send message to {receiver}");
+        // Get logger from DI
+        var httpLogger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+
+        // Get webhook configuration
+        var webhookConfig = context.RequestServices.GetRequiredService<IOptions<WebhookConfig>>().Value;
+
+        foreach (var alert in notification.Alerts)
+        {
+            var detail = BuildAlertDetail(alert);
+            string? url = null;
+            object message;
+            var messageBuilderFactory = context.RequestServices.GetRequiredService<MessageBuilderFactory>();
+
+            switch (receiverEnum)
+            {
+                case Receiver.Lark:
+                    url = webhookConfig.LarkBaseUrl + token;
+                    var larkBuilder = messageBuilderFactory.GetMessageBuilder<LarkMessage>(receiverEnum);
+                    message = larkBuilder.Build(detail);
+                    break;
+                case Receiver.Dingtalk:
+                    url = webhookConfig.DingtalkBaseUrl + token;
+                    var dingtalkBuilder = messageBuilderFactory.GetMessageBuilder<DingtalkMessage>(receiverEnum);
+                    message = dingtalkBuilder.Build(detail);
+                    break;
+                default:
+                    logger.LogWarning("Unsupported receiver type: {ReceiverType}", receiverEnum);
+                    return;
+            }
+
+
+            logger.LogInformation("Sending {Receiver} message to {Url}", receiver, url);
+            var ok = await SendToAsync(url, message, httpClient, httpLogger);
+            if (ok)
+            {
+                logger.LogInformation("Message sent to {Receiver} successfully", receiver);
+            }
+            else
+            {
+                logger.LogInformation("Failed to send message to {Receiver}", receiver);
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Unhandled exception while processing webhook");
+        context.Response.StatusCode = 500;
+        await context.Response.WriteAsync("Internal server error");
     }
 });
 
 app.Run();
 
-static async Task<bool> SendToAsync<T>(string url, T message, HttpClient httpClient)
+static async Task<(bool IsValid, Receiver ReceiverEnum)> ValidateRequest(HttpContext context, string receiver, string token, Notification notification, ILogger logger)
+{
+    // Validate receiver type
+    if (!Enum.TryParse<Receiver>(receiver, true, out var receiverEnum))
+    {
+        logger.LogWarning("Unsupported receiver type: {Receiver}", receiver);
+        context.Response.StatusCode = 400;
+        await context.Response.WriteAsync("Unsupported receiver type");
+        return (false, default);
+    }
+
+    // Validate notification data
+    if (notification == null || notification.Alerts == null || notification.Alerts.Length == 0)
+    {
+        logger.LogWarning("Invalid notification data");
+        context.Response.StatusCode = 400;
+        await context.Response.WriteAsync("Invalid notification data");
+        return (false, default);
+    }
+
+    // Validate token
+    if (string.IsNullOrWhiteSpace(token))
+    {
+        logger.LogWarning("Empty token parameter");
+        context.Response.StatusCode = 400;
+        await context.Response.WriteAsync("Token parameter is required");
+        return (false, default);
+    }
+
+    return (true, receiverEnum);
+}
+
+static async Task<bool> SendToAsync<T>(string url, T message, HttpClient httpClient, ILogger logger)
 {
     if (string.IsNullOrEmpty(url))
     {
@@ -86,25 +134,22 @@ static async Task<bool> SendToAsync<T>(string url, T message, HttpClient httpCli
         throw new ArgumentNullException(nameof(message), "Message cannot be null");
     }
 
-    var logger = LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger("AlertManagerWebhook");
+    try
     {
-        try
+        var json = JsonSerializer.Serialize(message);
+        var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
+        var response = await httpClient.PostAsync(url, httpContent);
+        if (!response.IsSuccessStatusCode)
         {
-            var json = JsonSerializer.Serialize(message);
-            var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await httpClient.PostAsync(url, httpContent);
-            if (!response.IsSuccessStatusCode)
-            {
-                var respContent = await response.Content.ReadAsStringAsync();
-                logger.LogError($"Failed to send message to {url}. Status: {response.StatusCode}, Response: {respContent}");
-            }
-            return response.IsSuccessStatusCode;
+            var respContent = await response.Content.ReadAsStringAsync();
+            logger.LogError("Failed to send message to {Url}. Status: {StatusCode}, Response: {ResponseContent}", url, response.StatusCode, respContent);
         }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, $"Error sending message to {url}");
-            return false;
-        }
+        return response.IsSuccessStatusCode;
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error sending message to {Url}", url);
+        return false;
     }
 }
 
