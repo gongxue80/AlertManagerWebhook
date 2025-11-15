@@ -1,8 +1,18 @@
+using System.Reflection;
 using System.Text.Json;
 using AlertManagerWebhook.Models;
 using AlertManagerWebhook.MessageBuilders;
 using System.Text;
 using Microsoft.Extensions.Options;
+
+// Check for version argument
+if (args.Contains("--version") || args.Contains("-v"))
+{
+    var version = Assembly.GetExecutingAssembly().GetName().Version;
+    var versionString = version is not null ? $"{version.Major}.{version.Minor}.{version.Build}" : "1.0.1";
+    Console.WriteLine($"AlertManagerWebhook Version {versionString}");
+    return;
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,67 +36,59 @@ app.MapPost("/{receiver}/{token}", async (HttpContext context,
     Notification notification,
     HttpClient httpClient) =>
 {
-    try
+    // Perform validation
+    var (isValid, receiverEnum) = await ValidateRequest(context, receiver, token, notification, logger);
+    if (!isValid)
     {
-        // Perform validation
-        var (isValid, receiverEnum) = await ValidateRequest(context, receiver, token, notification, logger);
-        if (!isValid)
+        return;
+    }
+
+    logger.LogInformation("Received notification for {ReceiverEnum}, alerts count: {AlertCount}, token: {TokenMasked}",
+        receiverEnum, notification.Alerts.Length, token.Substring(0, Math.Min(5, token.Length)) + "***");
+
+    // Get logger from DI
+    var httpLogger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+
+    // Get webhook configuration
+    var webhookConfig = context.RequestServices.GetRequiredService<IOptions<WebhookConfig>>().Value;
+
+    foreach (var alert in notification.Alerts)
+    {
+        var detail = BuildAlertDetail(alert);
+        string? url = null;
+        object message;
+        var messageBuilderFactory = context.RequestServices.GetRequiredService<MessageBuilderFactory>();
+
+        switch (receiverEnum)
         {
-            return;
+            case Receiver.Lark:
+                url = webhookConfig.LarkBaseUrl + token;
+                var larkBuilder = messageBuilderFactory.GetMessageBuilder<LarkMessage>(receiverEnum);
+                message = larkBuilder.Build(detail);
+                break;
+            case Receiver.Dingtalk:
+                url = webhookConfig.DingtalkBaseUrl + token;
+                var dingtalkBuilder = messageBuilderFactory.GetMessageBuilder<DingtalkMessage>(receiverEnum);
+                message = dingtalkBuilder.Build(detail);
+                break;
+            default:
+                logger.LogWarning("Unsupported receiver type: {ReceiverType}", receiverEnum);
+                return;
         }
 
-        logger.LogInformation("Received notification for {ReceiverEnum}, alerts count: {AlertCount}, token: {TokenMasked}",
-            receiverEnum, notification.Alerts.Length, token.Substring(0, Math.Min(5, token.Length)) + "***");
 
-        // Get logger from DI
-        var httpLogger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-
-        // Get webhook configuration
-        var webhookConfig = context.RequestServices.GetRequiredService<IOptions<WebhookConfig>>().Value;
-
-        foreach (var alert in notification.Alerts)
+        logger.LogInformation("Sending {Receiver} message to {Url}", receiver, url);
+        var ok = await SendToAsync(url, message, httpClient, httpLogger);
+        if (ok)
         {
-            var detail = BuildAlertDetail(alert);
-            string? url = null;
-            object message;
-            var messageBuilderFactory = context.RequestServices.GetRequiredService<MessageBuilderFactory>();
-
-            switch (receiverEnum)
-            {
-                case Receiver.Lark:
-                    url = webhookConfig.LarkBaseUrl + token;
-                    var larkBuilder = messageBuilderFactory.GetMessageBuilder<LarkMessage>(receiverEnum);
-                    message = larkBuilder.Build(detail);
-                    break;
-                case Receiver.Dingtalk:
-                    url = webhookConfig.DingtalkBaseUrl + token;
-                    var dingtalkBuilder = messageBuilderFactory.GetMessageBuilder<DingtalkMessage>(receiverEnum);
-                    message = dingtalkBuilder.Build(detail);
-                    break;
-                default:
-                    logger.LogWarning("Unsupported receiver type: {ReceiverType}", receiverEnum);
-                    return;
-            }
-
-
-            logger.LogInformation("Sending {Receiver} message to {Url}", receiver, url);
-            var ok = await SendToAsync(url, message, httpClient, httpLogger);
-            if (ok)
-            {
-                logger.LogInformation("Message sent to {Receiver} successfully", receiver);
-            }
-            else
-            {
-                logger.LogInformation("Failed to send message to {Receiver}", receiver);
-            }
+            logger.LogInformation("Message sent to {Receiver} successfully", receiver);
+        }
+        else
+        {
+            logger.LogInformation("Failed to send message to {Receiver}", receiver);
         }
     }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "Unhandled exception while processing webhook");
-        context.Response.StatusCode = 500;
-        await context.Response.WriteAsync("Internal server error");
-    }
+
 });
 
 app.Run();
