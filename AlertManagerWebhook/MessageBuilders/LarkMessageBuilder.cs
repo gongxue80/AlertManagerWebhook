@@ -15,57 +15,44 @@ public class LarkMessageBuilder : IMessageBuilder<LarkMessage>
         var timeTitle = isFiring ? "触发" : "开始";
         var alertDetailText = isFiring ? alert.Description : $"原告警：{alert.Description}";
 
-        // 构建结构化的卡片内容
+        // 构建卡片内容，采用单列布局以优化移动端显示
         var elements = new List<LarkCardElement>
         {
-            // 告警基本信息区域 - 使用分栏展示
+            // 告警基本信息区域 - 使用单列展示
             new LarkCardElement
             {
                 Tag = "div",
-                Fields = new[]
+                Text = new LarkCardElementText
                 {
-                    new LarkCardElementField { Text = new LarkCardElementText { Content = $"**告警名称：** {alert.Name}" } },
-                    new LarkCardElementField { Text = new LarkCardElementText { Content = $"**告警状态：** {statusText}" } }
+                    Content = $"**告警名称：** {alert.Name}\n" +
+                              $"**告警状态：** {statusText}" +
+                              (!string.IsNullOrEmpty(alert.EnvName) ? $"\n**环境：** {alert.EnvName}" : "") +
+                              (!string.IsNullOrEmpty(alert.Project) ? $"\n**项目：** {alert.Project}" : "")
                 }
-                .Concat(!string.IsNullOrEmpty(alert.EnvName) ? new[]
-                {
-                    new LarkCardElementField { Text = new LarkCardElementText { Content = $"**环境：** {alert.EnvName}" } }
-                } : Array.Empty<LarkCardElementField>())
-                .Concat(!string.IsNullOrEmpty(alert.Project) ? new[]
-                {
-                    new LarkCardElementField { Text = new LarkCardElementText { Content = $"**项目：** {alert.Project}" } }
-                } : Array.Empty<LarkCardElementField>())
-                .ToArray()
             },
 
-            // 实例和主机信息 - 使用分栏
+            // 实例和主机信息 - 使用单列
             new LarkCardElement
             {
                 Tag = "div",
-                Fields = new[]
+                Text = new LarkCardElementText
                 {
-                    new LarkCardElementField { Text = new LarkCardElementText { Content = $"**实例：** {alert.Instance}" } }
+                    Content = $"**实例：** {alert.Instance}" +
+                              (!string.IsNullOrEmpty(alert.Host) ? $"\n**主机：** {alert.Host}" : "")
                 }
-                .Concat(!string.IsNullOrEmpty(alert.Host) ? new[]
-                {
-                    new LarkCardElementField { Text = new LarkCardElementText { Content = $"**主机：** {alert.Host}" } }
-                } : Array.Empty<LarkCardElementField>())
-                .ToArray()
             },
-            // 时间信息 - 使用分栏
+
+            // 时间信息 - 使用单列
             new LarkCardElement
             {
                 Tag = "div",
-                Fields = new[]
+                Text = new LarkCardElementText
                 {
-                    new LarkCardElementField { Text = new LarkCardElementText { Content = $"**{timeTitle}时间：** {alert.StartsAt:yyyy-MM-dd HH:mm:ss zzz}" } }
+                    Content = $"**{timeTitle}时间：** {alert.StartsAt:yyyy-MM-dd HH:mm:ss zzz}" +
+                              (!isFiring ? $"\n**恢复时间：** {alert.EndsAt:yyyy-MM-dd HH:mm:ss zzz}" : "")
                 }
-                .Concat(!isFiring ? new[]
-                {
-                    new LarkCardElementField { Text = new LarkCardElementText { Content = $"**恢复时间：** {alert.EndsAt:yyyy-MM-dd HH:mm:ss zzz}" } }
-                } : Array.Empty<LarkCardElementField>())
-                .ToArray()
             },
+
             // 告警描述
             new LarkCardElement
             {

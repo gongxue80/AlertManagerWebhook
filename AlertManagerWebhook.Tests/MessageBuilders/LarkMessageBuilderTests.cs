@@ -40,13 +40,11 @@ public class LarkMessageBuilderTests
 
         // Check elements
         Assert.NotEmpty(result.Card.Elements);
-        // Verify critical fields are present
+        // Verify critical content is present
         Assert.Contains(result.Card.Elements, e =>
-            e.Fields != null && e.Fields.Any(f =>
-                f.Text.Content.Contains("HighCPUUsage")));
+            e.Text.Content.Contains("HighCPUUsage"));
         Assert.Contains(result.Card.Elements, e =>
-            e.Fields != null && e.Fields.Any(f =>
-                f.Text.Content.Contains("critical")));
+            e.Text.Content.Contains("critical"));
     }
 
     [Fact]

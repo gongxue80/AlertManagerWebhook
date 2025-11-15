@@ -35,7 +35,8 @@ app.MapPost("/{receiver}/{token}", async (HttpContext context,
             return;
         }
 
-        logger.LogInformation("Received notification for {ReceiverEnum}, alerts count: {AlertCount}, token: {TokenMasked}", receiverEnum, notification.Alerts.Length, token.Substring(0, Math.Min(5, token.Length)) + "***");
+        logger.LogInformation("Received notification for {ReceiverEnum}, alerts count: {AlertCount}, token: {TokenMasked}",
+            receiverEnum, notification.Alerts.Length, token.Substring(0, Math.Min(5, token.Length)) + "***");
 
         // Get logger from DI
         var httpLogger = context.RequestServices.GetRequiredService<ILogger<Program>>();
