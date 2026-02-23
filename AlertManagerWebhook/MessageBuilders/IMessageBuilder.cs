@@ -1,7 +1,8 @@
 using AlertManagerWebhook.Models;
+
 namespace AlertManagerWebhook.MessageBuilders;
 
-public interface IMessageBuilder<TMessage>
+public interface IMessageBuilder
 {
-    TMessage Build(AlertDetail alert);
+    object Build(AlertDetail alert);
 }

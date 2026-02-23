@@ -5,15 +5,17 @@ using System.Text.Json.Serialization;
 public record DingtalkMessage
 {
     [JsonPropertyName("msgtype")]
-    public string MsgType { get; set; } = "markdown";
+    public string MsgType { get; init; } = "markdown";
+
     [JsonPropertyName("markdown")]
-    public DingtalkMarkdown Markdown { get; set; } = new();
+    public DingtalkMarkdown Markdown { get; init; } = new();
 }
 
 public record DingtalkMarkdown
 {
     [JsonPropertyName("title")]
-    public string Title { get; set; } = string.Empty;
+    public string Title { get; init; } = string.Empty;
+
     [JsonPropertyName("text")]
-    public string Text { get; set; } = string.Empty;
+    public string Text { get; init; } = string.Empty;
 }

@@ -2,12 +2,9 @@ using AlertManagerWebhook.Models;
 
 namespace AlertManagerWebhook.MessageBuilders;
 
-public class LarkMessageBuilder : IMessageBuilder<LarkMessage>
+public class LarkMessageBuilder : IMessageBuilder
 {
-    /// <summary>
-    /// 构建 Lark 消息对象
-    /// </summary>
-    public LarkMessage Build(AlertDetail alert)
+    public object Build(AlertDetail alert)
     {
         var isFiring = alert.IsFiring;
         var title = isFiring ? "🚨 告警触发" : "✅ 告警恢复";
@@ -15,76 +12,58 @@ public class LarkMessageBuilder : IMessageBuilder<LarkMessage>
         var timeTitle = isFiring ? "触发" : "开始";
         var alertDetailText = isFiring ? alert.Description : $"原告警：{alert.Description}";
 
-        // 构建卡片内容，采用单列布局以优化移动端显示
         var elements = new List<LarkCardElement>
         {
-            // 告警基本信息区域 - 使用单列展示
-            new LarkCardElement
+            new()
             {
                 Tag = "div",
                 Text = new LarkCardElementText
                 {
-                    Content = $"**告警名称：** {alert.Name}\n" +
-                              $"**告警状态：** {statusText}" +
-                              (!string.IsNullOrEmpty(alert.EnvName) ? $"\n**环境：** {alert.EnvName}" : "") +
-                              (!string.IsNullOrEmpty(alert.Project) ? $"\n**项目：** {alert.Project}" : "")
-                }
+                    Content =
+                        $"**告警名称：** {alert.Name}\n"
+                        + $"**告警状态：** {statusText}"
+                        + (
+                            !string.IsNullOrEmpty(alert.EnvName)
+                                ? $"\n**环境：** {alert.EnvName}"
+                                : ""
+                        )
+                        + (
+                            !string.IsNullOrEmpty(alert.Project)
+                                ? $"\n**项目：** {alert.Project}"
+                                : ""
+                        ),
+                },
             },
-
-            // 实例和主机信息 - 使用单列
-            new LarkCardElement
+            new()
             {
                 Tag = "div",
                 Text = new LarkCardElementText
                 {
-                    Content = $"**实例：** {alert.Instance}" +
-                              (!string.IsNullOrEmpty(alert.Host) ? $"\n**主机：** {alert.Host}" : "")
-                }
+                    Content =
+                        $"**实例：** {alert.Instance}"
+                        + (!string.IsNullOrEmpty(alert.Host) ? $"\n**主机：** {alert.Host}" : ""),
+                },
             },
-
-            // 时间信息 - 使用单列
-            new LarkCardElement
+            new()
             {
                 Tag = "div",
                 Text = new LarkCardElementText
                 {
-                    Content = $"**{timeTitle}时间：** {alert.StartsAt:yyyy-MM-dd HH:mm:ss zzz}" +
-                              (!isFiring ? $"\n**恢复时间：** {alert.EndsAt:yyyy-MM-dd HH:mm:ss zzz}" : "")
-                }
+                    Content =
+                        $"**{timeTitle}时间：** {alert.StartsAt:yyyy-MM-dd HH:mm:ss zzz}"
+                        + (
+                            !isFiring
+                                ? $"\n**恢复时间：** {alert.EndsAt:yyyy-MM-dd HH:mm:ss zzz}"
+                                : ""
+                        ),
+                },
             },
-
-            // 告警描述
-            new LarkCardElement
+            new()
             {
                 Tag = "div",
-                Text = new LarkCardElementText
-                {
-                    Content = $"**告警详情：**\n{alertDetailText}"
-                }
-            }
+                Text = new LarkCardElementText { Content = $"**告警详情：**\n{alertDetailText}" },
+            },
         };
-
-        // 构建并返回 Lark 消息对象
-        // 根据告警级别和状态选择不同的颜色模板
-        string templateColor;
-        if (isFiring)
-        {
-            // 触发状态下根据告警级别选择颜色
-            templateColor = alert.Severity.ToLower() switch
-            {
-                "critical" => "red", // 严重告警 - 红色
-                "error" => "red",    // 错误告警 - 红色
-                "warning" => "orange", // 警告告警 - 橙色
-                "info" => "blue",    // 信息告警 - 蓝色
-                "notice" => "blue",  // 通知告警 - 蓝色
-                _ => "red"           // 默认 - 红色
-            };
-        }
-        else
-        {
-            // 恢复状态下默认绿色
-            templateColor = "green";
-        }
 
         return new LarkMessage
         {
@@ -94,10 +73,10 @@ public class LarkMessageBuilder : IMessageBuilder<LarkMessage>
                 Header = new LarkCardHeader
                 {
                     Title = new LarkCardHeaderTitle { Content = title },
-                    Template = templateColor
+                    Template = AlertSeverity.GetLarkTemplateColor(alert),
                 },
-                Elements = elements.ToArray()
-            }
+                Elements = elements.ToArray(),
+            },
         };
     }
 }

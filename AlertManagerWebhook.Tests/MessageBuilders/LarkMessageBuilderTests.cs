@@ -8,7 +8,6 @@ public class LarkMessageBuilderTests
     [Fact]
     public void Build_Should_Create_Firing_Alert_Message()
     {
-        // Arrange
         var alertDetail = new AlertDetail
         {
             IsFiring = true,
@@ -20,37 +19,25 @@ public class LarkMessageBuilderTests
             Host = "webserver-01",
             Description = "CPU usage has exceeded 90% for 5 minutes",
             StartsAt = DateTime.Now.AddMinutes(-10),
-            EndsAt = DateTime.Now
+            EndsAt = DateTime.Now,
         };
 
         var builder = new LarkMessageBuilder();
+        var result = Assert.IsType<LarkMessage>(builder.Build(alertDetail));
 
-        // Act
-        var result = builder.Build(alertDetail);
-
-        // Assert
-        Assert.NotNull(result);
         Assert.NotNull(result.Card);
         Assert.NotNull(result.Card.Header);
         Assert.NotNull(result.Card.Elements);
-
-        // Check header
         Assert.Contains("🚨 告警触发", result.Card.Header.Title.Content);
         Assert.Equal("red", result.Card.Header.Template);
-
-        // Check elements
         Assert.NotEmpty(result.Card.Elements);
-        // Verify critical content is present
-        Assert.Contains(result.Card.Elements, e =>
-            e.Text.Content.Contains("HighCPUUsage"));
-        Assert.Contains(result.Card.Elements, e =>
-            e.Text.Content.Contains("critical"));
+        Assert.Contains(result.Card.Elements, e => e.Text.Content.Contains("HighCPUUsage"));
+        Assert.Contains(result.Card.Elements, e => e.Text.Content.Contains("critical"));
     }
 
     [Fact]
     public void Build_Should_Create_Resolved_Alert_Message()
     {
-        // Arrange
         var alertDetail = new AlertDetail
         {
             IsFiring = false,
@@ -62,21 +49,13 @@ public class LarkMessageBuilderTests
             Host = "webserver-01",
             Description = "CPU usage has exceeded 90% for 5 minutes",
             StartsAt = DateTime.Now.AddMinutes(-10),
-            EndsAt = DateTime.Now
+            EndsAt = DateTime.Now,
         };
 
         var builder = new LarkMessageBuilder();
+        var result = Assert.IsType<LarkMessage>(builder.Build(alertDetail));
 
-        // Act
-        var result = builder.Build(alertDetail);
-
-        // Assert
-        Assert.NotNull(result);
         Assert.NotNull(result.Card);
-        Assert.NotNull(result.Card.Header);
-        Assert.NotNull(result.Card.Elements);
-
-        // Check header
         Assert.Contains("✅ 告警恢复", result.Card.Header.Title.Content);
         Assert.Equal("green", result.Card.Header.Template);
     }
@@ -84,7 +63,6 @@ public class LarkMessageBuilderTests
     [Fact]
     public void Build_Should_Handle_Minimal_Alert_Data()
     {
-        // Arrange
         var alertDetail = new AlertDetail
         {
             IsFiring = true,
@@ -96,16 +74,12 @@ public class LarkMessageBuilderTests
             Host = string.Empty,
             Description = "Test alert description",
             StartsAt = DateTime.Now,
-            EndsAt = DateTime.Now
+            EndsAt = DateTime.Now,
         };
 
         var builder = new LarkMessageBuilder();
+        var result = Assert.IsType<LarkMessage>(builder.Build(alertDetail));
 
-        // Act
-        var result = builder.Build(alertDetail);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Contains("blue", result.Card.Header.Template); // Info should be blue
+        Assert.Equal("blue", result.Card.Header.Template);
     }
 }

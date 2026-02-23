@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace AlertManagerWebhook.Models;
 
 public class WebhookConfig
@@ -12,5 +10,6 @@ public class WebhookConfig
     /// <summary>
     /// Dingtalk webhook base URL
     /// </summary>
-    public string DingtalkBaseUrl { get; set; } = "https://oapi.dingtalk.com/robot/send?access_token=";
+    public string DingtalkBaseUrl { get; set; } =
+        "https://oapi.dingtalk.com/robot/send?access_token=";
 }

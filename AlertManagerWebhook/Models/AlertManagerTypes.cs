@@ -1,53 +1,53 @@
 using System.Text.Json.Serialization;
+
 namespace AlertManagerWebhook.Models;
 
 public enum Receiver
 {
     Lark,
-    Dingtalk
+    Dingtalk,
 }
 
 public enum AlertStatus
 {
     Firing,
-    Resolved
+    Resolved,
 }
+
 // https://prometheus.io/docs/alerting/latest/configuration/#webhook_config
 public record Alert
 {
     [JsonConverter(typeof(JsonStringEnumConverter))]
-    public AlertStatus Status { get; set; }
-    public Dictionary<string, string> Labels { get; set; } = new();
-    public Dictionary<string, string> Annotations { get; set; } = new();
-    public DateTime StartsAt { get; set; }
-    public DateTime EndsAt { get; set; }
-    public string Fingerprint { get; set; } = string.Empty;
+    public AlertStatus Status { get; init; }
+    public Dictionary<string, string> Labels { get; init; } = new();
+    public Dictionary<string, string> Annotations { get; init; } = new();
+    public DateTime StartsAt { get; init; }
+    public DateTime EndsAt { get; init; }
+    public string Fingerprint { get; init; } = string.Empty;
 }
-
-
 
 public record Notification
 {
-    public string Version { get; set; } = string.Empty;
-    public string GroupKey { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
-    public string Receiver { get; set; } = string.Empty;
-    public Dictionary<string, string> GroupLabels { get; set; } = new();
-    public Dictionary<string, string> CommonLabels { get; set; } = new();
-    public string ExternalURL { get; set; } = string.Empty;
-    public Alert[] Alerts { get; set; } = Array.Empty<Alert>();
+    public string Version { get; init; } = string.Empty;
+    public string GroupKey { get; init; } = string.Empty;
+    public string Status { get; init; } = string.Empty;
+    public string Receiver { get; init; } = string.Empty;
+    public Dictionary<string, string> GroupLabels { get; init; } = new();
+    public Dictionary<string, string> CommonLabels { get; init; } = new();
+    public string ExternalURL { get; init; } = string.Empty;
+    public Alert[] Alerts { get; init; } = Array.Empty<Alert>();
 }
 
 public record AlertDetail
 {
-    public bool IsFiring { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string Severity { get; set; } = string.Empty;
-    public string EnvName {get; set;} = string.Empty;
-    public string Project {get; set;} = string.Empty;
-    public string Instance { get; set; } = string.Empty;
-    public string Host { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public DateTime StartsAt { get; set; }
-    public DateTime EndsAt { get; set; }
+    public bool IsFiring { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string Severity { get; init; } = string.Empty;
+    public string EnvName { get; init; } = string.Empty;
+    public string Project { get; init; } = string.Empty;
+    public string Instance { get; init; } = string.Empty;
+    public string Host { get; init; } = string.Empty;
+    public string Description { get; init; } = string.Empty;
+    public DateTime StartsAt { get; init; }
+    public DateTime EndsAt { get; init; }
 }
