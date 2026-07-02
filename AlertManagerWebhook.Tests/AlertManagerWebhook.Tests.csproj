@@ -21,6 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AlertManagerWebhook\AlertManagerWebhook.csproj" />
+    <ProjectReference Include="../AlertManagerWebhook/AlertManagerWebhook.csproj" />
   </ItemGroup>
 </Project>

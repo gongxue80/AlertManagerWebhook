@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="AlertManagerWebhook.Tests/AlertManagerWebhook.Tests.csproj" />
+  <Project Path="AlertManagerWebhook/AlertManagerWebhook.csproj" />
+</Solution>

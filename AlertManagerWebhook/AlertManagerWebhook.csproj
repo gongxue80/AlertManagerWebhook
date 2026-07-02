@@ -5,5 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>1c2617d7-dad8-471c-9611-09e6613da3f1</UserSecretsId>
     <Version>0.1.10</Version>
+
+    <BaseIntermediateOutputPath>obj/</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>obj/$(Configuration)/$(TargetFramework)/</IntermediateOutputPath>
   </PropertyGroup>
 </Project>

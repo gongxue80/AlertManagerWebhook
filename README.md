@@ -14,9 +14,9 @@
 
 ### 1. 环境准备
 
-- .NET 8.0 运行环境
-  - Ubuntu: `sudo apt install dotnet-runtime-8.0`
-  - Windows: 下载并安装 .NET 8.0 SDK from [官方网站](https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0)
+- .NET 10.0 运行环境
+  - Ubuntu: `sudo apt install dotnet-runtime-10.0`
+  - Windows: 下载并安装 .NET 10.0 SDK from [官方网站](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0)
 
 ### 2. 构建与发布
 
@@ -68,7 +68,7 @@ receivers:
 
 ```bash
 # 进入发布目录
-cd AlertManagerWebhook/bin/Release/net8.0/linux-x64/publish
+cd AlertManagerWebhook/bin/Release/net10.0/linux-x64/publish
 
 # 运行服务（默认端口 5000）
 dotnet AlertManagerWebhook.dll
